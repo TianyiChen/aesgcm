@@ -100,13 +100,10 @@ void unit_test(bool quick) {
 	auto aes = make_unique<AES256GCM>(key);
 	string input;
 	mt19937 mt(random_device{}());
-	stringstream ss, cipher;
 	auto validate = [&](int len) {
 		while (input.size() < len)
 			input.push_back(mt());
-		ss.clear();
-		ss << input;
-		cipher.clear();
+		stringstream ss{input}, cipher;
 		aes->encrypt(ss, cipher);
 		int decrypted = 0;
 		aes->decrypt(cipher, [&](UC *c, int len) {
