@@ -1,0 +1,40 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ ]
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        CXX: [g++-11, g++-12, g++-13, clang-15, clang-14]
+    steps:
+    - uses: actions/checkout@v3
+    - name: install env
+      run: |
+        wget --no-check-certificate -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main'
+        sudo apt install ${{matrix.CXX}} ${{ fromJson('{ "clang-15": "libc++-15-dev libc++abi-15-dev", "clang-14": "libc++-14-dev libc++abi-14-dev" }')[matrix.CXX] }}
+        make env_install
+    - name: make
+      id: make
+      run: make && echo "BUILD_HASH=$(sha256sum bin/aesgcm)" >> "$GITHUB_OUTPUT"
+      env:
+        CXX: ${{ matrix.CXX }}
+    - name: test
+      run: make test
+      env:
+        CXX: ${{ matrix.CXX }}
+    - uses: ncipollo/release-action@v1
+      if: ${{ github.ref == 'refs/heads/main' && matrix.CXX == 'g++-12' }}
+      with:
+        commit: main
+        tag: ${{ github.event.head_commit.message }}
+        body: ${{ steps.make.outputs.BUILD_HASH }}
+        artifacts: "bin/aesgcm"

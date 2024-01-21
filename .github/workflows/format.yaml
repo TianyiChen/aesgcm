@@ -1,0 +1,16 @@
+name: Enforce Formatting
+
+on:
+  push:
+    branches: [ '*' ]
+jobs:
+  clang-formatting:
+    name: Clang format on C++ files
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run clang-format style check for C/C++ programs.
+      uses: jidicula/clang-format-action@v4.10.1
+      with:
+        clang-format-version: '16'
+        exclude-regex: '^\.\/deps\/'
