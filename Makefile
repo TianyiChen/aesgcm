@@ -11,6 +11,8 @@ bin/aesgcm_san:
 	$(CPP) aesgcm.cpp -fsanitize=address -o bin/aesgcm_san $(LDFLAGS)
 test:bin/aesgcm_san
 	bin/aesgcm_san test
+	dd if=/dev/urandom of=/tmp/aes.a bs=1024 count=1 && \
+	bin/aesgcm_san enc 123 /tmp/aes.a /tmp/aes.b && bin/aesgcm_san dec 123 /tmp/aes.b /tmp/aes.c && cmp -s /tmp/aes.a /tmp/aes.c && rm /tmp/aes.*
 
 env_install:
 	python3 -m pip install tclib
