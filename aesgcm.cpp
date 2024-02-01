@@ -17,6 +17,7 @@ constexpr size_t BATCH_SIZE = 1 << 20;
 			#x \
 		}
 using UC = unsigned char;
+// AES-Encrypted-GCM-Version
 const string_view MAGIC{"AEG\0", 4};
 
 struct AES256GCM {
@@ -100,13 +101,10 @@ void unit_test(bool quick) {
 	auto aes = make_unique<AES256GCM>(key);
 	string input;
 	mt19937 mt(random_device{}());
-	stringstream ss, cipher;
 	auto validate = [&](int len) {
 		while (input.size() < len)
 			input.push_back(mt());
-		ss.clear();
-		ss << input;
-		cipher.clear();
+		stringstream ss{input}, cipher;
 		aes->encrypt(ss, cipher);
 		int decrypted = 0;
 		aes->decrypt(cipher, [&](UC *c, int len) {
@@ -133,12 +131,11 @@ int main(int argc, char **argv) {
 	CLI::App *test = app.add_subcommand("test", "test");
 	app.require_subcommand(1, 1);
 	string key, input, output;
-	for (auto x : {enc, dec})
+	for (auto x : {enc, dec}) {
 		x->add_option("key", key, "Encryption/Decryption key in hex, 64 or less chars")->required();
-	for (auto x : {enc, dec})
 		x->add_option("input", input, "Input file path")->required();
-	for (auto x : {enc, dec})
 		x->add_option("output", output, "Output file path")->required();
+	}
 	CLI11_PARSE(app, argc, argv);
 	if (*test) {
 		unit_test(0);
@@ -147,7 +144,7 @@ int main(int argc, char **argv) {
 	if (key.size() > 64) {
 		cerr << "Warning: key more than 64 chars, the end will be ignored\n";
 	}
-	key.resize(64);
+	key.resize(64, '0');
 	auto to_int = [](char c) {
 		if (isdigit(c)) return c - '0';
 		if (c >= 'A' && c <= 'F') return c - 'A' + 10;
@@ -168,4 +165,5 @@ int main(int argc, char **argv) {
 		auto v = aes->decrypt(i, [&](UC *c, int len) { o.write((char *)c, len); });
 		FASSERT(v);
 	}
+	FASSERT(o.good());
 }
